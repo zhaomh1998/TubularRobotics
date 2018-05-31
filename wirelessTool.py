@@ -1,10 +1,10 @@
-import socket#
+import socket
 
 class TCPEchoServer:
     def __init__(self,port,receiveTimeout):
         self.__recvTimeout = receiveTimeout
         self.__serverSock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.__serverSock.bind(('localhost', port))
+        self.__serverSock.bind(('0.0.0.0', port))
         self.__serverSock.listen(1)
         print("Server started. Listening connections")
     
@@ -30,7 +30,7 @@ class TCPEchoServer:
             return self.__clientsocket.recv(1024)
         except socket.timeout:
             print("Timeout awaiting connection")
-            return False
+            return 'z' # timeout awaiting connection
             
     def write(self,data):
         self.__clientsocket.send(data)
