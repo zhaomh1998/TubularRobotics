@@ -4,6 +4,7 @@ import RPi.GPIO as GPIO
 class MotorController:
         def __init__(self,LMotorPWNPin,LMotorForwardPin,LMotorBackwardPin,RMotorPWNPin,RMotorForwardPin,RMotorBackwardPin):
             #setup gpios
+            GPIO.setmode(GPIO.BCM)
             GPIO.setup(LMotorPWNPin, GPIO.OUT)
             GPIO.setup(LMotorForwardPin, GPIO.OUT)
             GPIO.setup(LMotorBackwardPin, GPIO.OUT)
@@ -19,47 +20,49 @@ class MotorController:
             self.__RMotorBackwardPin = RMotorBackwardPin
             # init vars
             self.__currentDutyCycle = 0
+            self.__LMotor.start(0)
+            self.__RMotor.start(0)
 
         def setForward(self):
             GPIO.output(self.__LMotorForwardPin, True)
             GPIO.output(self.__LMotorBackwardPin, False)
-            GPIO.output(self.__RMotorForwardPin, True)
-            GPIO.output(self.__RMotorBackwardPin, False)
+            GPIO.output(self.__RMotorForwardPin, False)
+            GPIO.output(self.__RMotorBackwardPin, True)
 
         def setBackward(self):
             GPIO.output(self.__LMotorForwardPin, False)
             GPIO.output(self.__LMotorBackwardPin, True)
-            GPIO.output(self.__RMotorForwardPin, False)
-            GPIO.output(self.__RMotorBackwardPin, True)
+            GPIO.output(self.__RMotorForwardPin, True)
+            GPIO.output(self.__RMotorBackwardPin, False)
 
         def setLeft(self):
             GPIO.output(self.__LMotorForwardPin, False)
             GPIO.output(self.__LMotorBackwardPin, True)
-            GPIO.output(self.__RMotorForwardPin, True)
-            GPIO.output(self.__RMotorBackwardPin, False)
+            GPIO.output(self.__RMotorForwardPin, False)
+            GPIO.output(self.__RMotorBackwardPin, True)
 
         def setRight(self):
             GPIO.output(self.__LMotorForwardPin, True)
             GPIO.output(self.__LMotorBackwardPin, False)
-            GPIO.output(self.__RMotorForwardPin, False)
-            GPIO.output(self.__RMotorBackwardPin, True)
+            GPIO.output(self.__RMotorForwardPin, True)
+            GPIO.output(self.__RMotorBackwardPin, False)
         
         def slowBreak(self):
-            while (startDutyCycle >= 10):
-                startDutyCycle = startDutyCycle - 10
-                self.__LMotor.ChangeDutyCycle(startDutyCycle)
-                self.__RMotor.ChangeDutyCycle(startDutyCycle)
+            while (self.__currentDutyCycle >= 10):
+                self.__currentDutyCycle = self.__currentDutyCycle - 10
+                self.__LMotor.ChangeDutyCycle(self.__currentDutyCycle)
+                self.__RMotor.ChangeDutyCycle(self.__currentDutyCycle)
                 time.sleep(0.1)
 
         def slowStart(self,targetDutyCycle):
             self.__currentDutyCycle = 0
             while (self.__currentDutyCycle < targetDutyCycle):
                 self.__currentDutyCycle = self.__currentDutyCycle + 10
-                self.__LMotor.ChangeDutyCycle(currentDutyCycle)
-                self.__RMotor.ChangeDutyCycle(currentDutyCycle)
+                self.__LMotor.ChangeDutyCycle(self.__currentDutyCycle)
+                self.__RMotor.ChangeDutyCycle(self.__currentDutyCycle)
                 time.sleep(0.1)
 
-        def cleanupMotors(self):
+        def close(self):
             self.__LMotor.stop()
             self.__RMotor.stop()
             GPIO.cleanup()

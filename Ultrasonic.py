@@ -1,8 +1,13 @@
-import time
+import time,WirelessTool
 import RPi.GPIO as GPIO
 GPIO.setmode(GPIO.BCM)
-ULTRASONIC_TRIGGER_PINS = [11,14]
-ULTRASONIC_ECHO_PINS = [13,15]
+ULTRASONIC_TRIGGER_PINS = [5,6,26]
+ULTRASONIC_ECHO_PINS = [11,13,19]
+
+
+USServer = WirelessTool.TCPEchoServer(3001,2,'127.0.0.1')
+while(not USServer.connect(5)):
+    print("Ultrasonic Server Waiting Client Connection")
 
 # Setup GPIO Pins for Ultrasonic
 for gpioPin in ULTRASONIC_TRIGGER_PINS:
@@ -28,11 +33,17 @@ def ultrasonic(ultrasonicIndex):
     while GPIO.input(ULTRASONIC_ECHO_PINS[ultrasonicIndex])==1:
         echoTime = time.time()
     return (echoTime-start) * 34300/2
+    
 
 
 try:
     while True:
-        print "Ultrasonic: %.1f %.1f" %(ultrasonic(0), ultrasonic(1))
+        USServer.write('U0'+ str(int(ultrasonic(0))) + '\t')
+        time.sleep(0.01)
+        USServer.write('U1'+ str(int(ultrasonic(1))) + '\t')
+        time.sleep(0.01)
+        USServer.write('U2'+ str(int(ultrasonic(2))) + '\t')
         time.sleep(0.01)
 except KeyboardInterrupt:
     GPIO.cleanup()
+    USServer.close()
