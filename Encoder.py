@@ -1,5 +1,5 @@
 from RPi import GPIO
-from time import sleep
+import time
 import WirelessTool
 
 R_clk = 10
@@ -21,6 +21,7 @@ R_counter = 0
 R_clkLastState = GPIO.input(R_clk)
 L_counter = 0
 L_clkLastState = GPIO.input(L_clk)
+lastSent = time.time()
 try:
 
         while True:
@@ -33,7 +34,6 @@ try:
                                 R_counter += 1
                         else:
                                 R_counter -= 1
-                        print R_counter
 
                 if L_clkState != L_clkLastState:
                         if L_dtState != L_clkState:
@@ -43,6 +43,12 @@ try:
                         print L_counter
                 R_clkLastState = R_clkState
                 L_clkLastState = L_clkState
-                sleep(0.0001)
+                time.sleep(0.0001)
+                timeBefore = time.time()
+                if(time.time() - lastSent > 1):
+                        ECServer.write('E0' + str(R_counter) + '\t')
+                        ECServer.write('E1' + str(L_counter) + '\t')
+                        lastSent = time.time()
+                        print(time.time() - timeBefore)
 finally:
         GPIO.cleanup()

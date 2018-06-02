@@ -38,12 +38,14 @@ def ultrasonic(ultrasonicIndex):
 
 try:
     while True:
-        USServer.write('U0'+ str(int(ultrasonic(0))) + '\t')
+        u0 = int(ultrasonic(0))
+        USServer.write('U0'+ str(u0) + '\t')
+        print(u0)
         time.sleep(0.01)
         USServer.write('U1'+ str(int(ultrasonic(1))) + '\t')
         time.sleep(0.01)
         USServer.write('U2'+ str(int(ultrasonic(2))) + '\t')
-        time.sleep(0.01)
+        time.sleep(0.01) 
 except KeyboardInterrupt:
     GPIO.cleanup()
     USServer.close()
