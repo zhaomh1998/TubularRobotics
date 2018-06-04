@@ -50,7 +50,7 @@ def decodeCommand(rawData):
 def prepareData(command,data):
     dataTime = time.time() - initTime
     if (command == 'U0'):
-        global U0Count
+        global U0Count, E0Buffer, E1Buffer
         U0Buffer[U0Count][0] = float(data)
         U0Buffer[U0Count][1] = dataTime
         U0Buffer[U0Count][2] = E0Buffer
@@ -60,7 +60,7 @@ def prepareData(command,data):
             sendArray('U0', U0Buffer)
         U0Count += 1
     elif (command == 'U1'):
-        global U1Count
+        global U1Count, E0Buffer, E1Buffer
         U1Buffer[U1Count][0] = float(data)
         U1Buffer[U1Count][1] = dataTime
         U1Buffer[U1Count][2] = E0Buffer
@@ -70,7 +70,7 @@ def prepareData(command,data):
             sendArray('U1', U1Buffer)
         U1Count += 1
     elif (command == 'U2'):
-        global U2Count
+        global U2Count, E0Buffer, E1Buffer
         U2Buffer[U2Count][0] = float(data)
         U2Buffer[U2Count][1] = dataTime
         U2Buffer[U2Count][2] = E0Buffer
@@ -85,7 +85,7 @@ def prepareData(command,data):
         E1Buffer = float(data)
 
 def sendArray(dataTypeName, dataArr):
-    dataStream = dataTypeName + '\t' + np.array_str(dataArr[:,0]) + '\t' + np.array_str(dataArr[:,1]+ '\t' + np.array_str(dataArr[:,2]+ '\t' + np.array_str(dataArr[:,3])
+    dataStream = dataTypeName + '\t' + np.array_str(dataArr[:,0]) + '\t' + np.array_str(dataArr[:,1]) + '\t' + np.array_str(dataArr[:,2]) + '\t' + np.array_str(dataArr[:,3])
     TCPServer.write(dataStream)
 
 initTime = time.time()
