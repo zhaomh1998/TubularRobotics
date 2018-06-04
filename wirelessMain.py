@@ -13,16 +13,14 @@ while(not TCPServer.connect(10)):
 U0Readings = np.zeros(9)
 U1Readings = np.zeros(9)
 U2Readings = np.zeros(9)
-U0Buffer = np.zeros((10,2))
-U1Buffer = np.zeros((10,2))
-U2Buffer = np.zeros((10,2))
-E0Buffer = np.zeros((10,2))
-E1Buffer = np.zeros((10,2))
+U0Buffer = np.zeros((10,4))
+U1Buffer = np.zeros((10,4))
+U2Buffer = np.zeros((10,4))
+E0Buffer = 0
+E1Buffer = 0
 U0Count = 0
 U1Count = 0
 U2Count = 0
-E0Count = 0
-E1Count = 0
 
 
 def decodeCommand(rawData):
@@ -55,6 +53,8 @@ def prepareData(command,data):
         global U0Count
         U0Buffer[U0Count][0] = float(data)
         U0Buffer[U0Count][1] = dataTime
+        U0Buffer[U0Count][2] = E0Buffer
+        U0Buffer[U0Count][3] = E1Buffer
         if(U0Count == 9): # Buffer full, send
             U0Count = -1
             sendArray('U0', U0Buffer)
@@ -63,6 +63,8 @@ def prepareData(command,data):
         global U1Count
         U1Buffer[U1Count][0] = float(data)
         U1Buffer[U1Count][1] = dataTime
+        U1Buffer[U1Count][2] = E0Buffer
+        U1Buffer[U1Count][3] = E1Buffer
         if(U1Count == 9): # Buffer full, send
             U1Count = -1
             sendArray('U1', U1Buffer)
@@ -71,29 +73,19 @@ def prepareData(command,data):
         global U2Count
         U2Buffer[U2Count][0] = float(data)
         U2Buffer[U2Count][1] = dataTime
+        U2Buffer[U2Count][2] = E0Buffer
+        U2Buffer[U2Count][3] = E1Buffer
         if(U2Count == 9): # Buffer full, send
             U2Count = -1
             sendArray('U2', U2Buffer)
         U2Count += 1
     elif (command == 'E0'):
-        global E0Count
-        E0Buffer[E0Count][0] = float(data)
-        E0Buffer[E0Count][1] = dataTime
-        if(E0Count == 9): # Buffer full, send
-            E0Count = -1
-            sendArray('E0', E0Buffer)
-        E0Count += 1
+        E0Buffer = float(data)
     elif (command == 'E1'):
-        global E1Count
-        E1Buffer[E1Count][0] = float(data)
-        E1Buffer[E1Count][1] = dataTime
-        if(E1Count == 9): # Buffer full, send
-            E1Count = -1
-            sendArray('E0', E1Buffer)
-        E1Count += 1
+        E1Buffer = float(data)
 
 def sendArray(dataTypeName, dataArr):
-    dataStream = dataTypeName + '\t' + np.array_str(dataArr[:,0]) + '\t' + np.array_str(dataArr[:,1])
+    dataStream = dataTypeName + '\t' + np.array_str(dataArr[:,0]) + '\t' + np.array_str(dataArr[:,1]+ '\t' + np.array_str(dataArr[:,2]+ '\t' + np.array_str(dataArr[:,3])
     TCPServer.write(dataStream)
 
 initTime = time.time()
@@ -157,6 +149,6 @@ while(True):
         print(colorama.Fore.RED + '[ERROR]\t' + colorama.Style.RESET_ALL + traceback.format_exc())
         TCPServer.close()
         Ultrasonic.close()
-        # Encoder.close()
+        Encoder.close()
         MainController.close()
         break
