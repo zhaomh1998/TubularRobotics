@@ -1,6 +1,6 @@
 from RPi import GPIO
-import time
-import WirelessTool
+import time, WirelessTool, traceback, colorama
+colorama.init()
 
 R_clk = 10
 R_dt = 9
@@ -40,15 +40,17 @@ try:
                                 L_counter += 1
                         else:
                                 L_counter -= 1
-                        print L_counter
+                        # print L_counter
                 R_clkLastState = R_clkState
                 L_clkLastState = L_clkState
                 time.sleep(0.0001)
                 timeBefore = time.time()
-                if(time.time() - lastSent > 1):
+                if(time.time() - lastSent > 0.1):
                         ECServer.write('E0' + str(R_counter) + '\t')
                         ECServer.write('E1' + str(L_counter) + '\t')
                         lastSent = time.time()
-                        print(time.time() - timeBefore)
-finally:
+except BaseException as e:
+        print(colorama.Fore.RED + '[ERROR]\t' + colorama.Style.RESET_ALL + e.message)
+        print(colorama.Fore.RED + '[ERROR]\t' + colorama.Style.RESET_ALL + traceback.format_exc())
+        ECServer.close()
         GPIO.cleanup()

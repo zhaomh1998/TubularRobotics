@@ -1,9 +1,10 @@
-import socket
+import socket, colorama
 
 class TCPEchoServer:
     def __init__(self,port,receiveTimeout,listeningIPAddress='0.0.0.0'):
         self.__recvTimeout = receiveTimeout
         self.__serverSock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.__serverSock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self.__serverSock.bind((listeningIPAddress, port))
         self.__serverSock.listen(1)
         # print("Server started. Listening connections")
@@ -16,7 +17,7 @@ class TCPEchoServer:
             self.__clientsocket.settimeout(self.__recvTimeout)
             return True
         except socket.timeout:
-            print("Timeout awaiting connection")
+            # print("Timeout awaiting connection")
             return False
 
     def getClientAddr(self):
@@ -37,7 +38,8 @@ class TCPEchoServer:
         self.__clientsocket.send(data)
         return True
     def close(self):
-        self.__clientsocket.shutdown(1)
+        # self.__clientsocket.shutdown(1)
+        print(colorama.Fore.GREEN + '[CLEANUP]\t' + colorama.Style.RESET_ALL + 'Closing Server')
         self.__clientsocket.close()
         self.__serverSock.close()
         return True
@@ -61,5 +63,6 @@ class TCPClient:
             # print("Timeout awaiting message")
             return 'Z' # timeout awaiting message
     def close(self):
+        print(colorama.Fore.GREEN + '[CLEANUP]\t' + colorama.Style.RESET_ALL + 'Closing client socket')
         self.__clientSock.close()
         return True

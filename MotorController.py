@@ -61,6 +61,31 @@ class MotorController:
                 self.__LMotor.ChangeDutyCycle(self.__currentDutyCycle)
                 self.__RMotor.ChangeDutyCycle(self.__currentDutyCycle)
                 time.sleep(0.1)
+        
+        def changeSpeed(self,targetDutyCycle):
+            # Nothing done if current = target
+            while(self.__currentDutyCycle < targetDutyCycle):
+                self.__currentDutyCycle = self.__currentDutyCycle + 1
+                self.__LMotor.ChangeDutyCycle(self.__currentDutyCycle)
+                self.__RMotor.ChangeDutyCycle(self.__currentDutyCycle)
+                time.sleep(0.1)
+            while(self.__currentDutyCycle > targetDutyCycle):
+                self.__currentDutyCycle = self.__currentDutyCycle - 1
+                self.__LMotor.ChangeDutyCycle(self.__currentDutyCycle)
+                self.__RMotor.ChangeDutyCycle(self.__currentDutyCycle)
+                time.sleep(0.1)
+        def fastStart(self,targetDutyCycle):
+            self.__currentDutyCycle = 0
+            while (self.__currentDutyCycle < 60):
+                self.__currentDutyCycle = self.__currentDutyCycle + 5
+                self.__LMotor.ChangeDutyCycle(self.__currentDutyCycle)
+                self.__RMotor.ChangeDutyCycle(self.__currentDutyCycle)
+                time.sleep(0.1)
+            while(self.__currentDutyCycle > targetDutyCycle):
+                self.__currentDutyCycle = self.__currentDutyCycle - 10
+                self.__LMotor.ChangeDutyCycle(self.__currentDutyCycle)
+                self.__RMotor.ChangeDutyCycle(self.__currentDutyCycle)
+                time.sleep(0.1)
 
         def close(self):
             self.__LMotor.stop()

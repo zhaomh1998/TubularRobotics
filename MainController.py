@@ -1,4 +1,5 @@
-import WirelessTool, MotorController
+import WirelessTool, MotorController, traceback, colorama, time
+colorama.init()
 
 command = WirelessTool.TCPEchoServer(3003,2)
 car = MotorController.MotorController(18,23,24,17,27,22)
@@ -8,8 +9,8 @@ while(not command.connect(5)):
 # Connected
 isManual = True
 USReading = 50
-flag = 1
-currentSpeed = 0
+currentSpeed = 0.0
+isGoingForward = True
 while(True):
     try:
         received = command.read()
@@ -18,65 +19,69 @@ while(True):
             # print received
             for data in received[:-1]:
                 if(data[0] == 'F' and USReading > 20):
+                    isGoingForward = True
                     isManual = True
                     car.slowBreak()
                     car.setForward()
                     currentSpeed = int(data[1:])
-                    car.slowStart(currentSpeed)
-                    # print('F')
-                    command.write('OK')
+                    # car.slowStart(currentSpeed)
+                    car.fastStart(currentSpeed)
                 elif(data[0] == 'B'):
                     isManual = True
                     car.slowBreak()
                     car.setBackward()
                     currentSpeed = int(data[1:])
                     car.slowStart(currentSpeed)
-                    # print('B')
-                    command.write('OK')
                 elif(data[0] == 'R'):
                     isManual = True
                     car.slowBreak()
                     car.setRight()
                     currentSpeed = int(data[1:])
                     car.slowStart(currentSpeed)
-                    # print('L')
-                    command.write('OK')
                 elif(data[0] == 'L'):
                     isManual = True
                     car.slowBreak()
                     car.setLeft()
                     currentSpeed = int(data[1:])
                     car.slowStart(currentSpeed)
-                    # print('R')
-                    command.write('OK')
                 elif(data[0] == 'S'):
                     isManual = True
                     car.slowBreak()
-                    # print('S')
-                    command.write('OK')
+                elif(data[0] == 'A'):
+                    if(int(data[1:]) == 1):
+                        isManual = False
+                    else:
+                        isManual = True
                 elif(data[0] == 'U'):
-                    USReading = int(data[1:])
-                    print (USReading)
-                    if(USReading < currentSpeed * 3):
+                    USReading = float(data[1:])
+                    # print (USReading)
+                    if((USReading < (40 + currentSpeed)) and isGoingForward):
                         print('\t' + str(USReading))
                         car.slowBreak()
+                        isGoingForward = False
+                        print(colorama.Fore.LIGHTBLUE_EX + '[DEBUG]\t' + colorama.Style.RESET_ALL + 'Slow break finished')
+                
+            if(not isManual):
+                distanceForward = USReading - 80
+                print(colorama.Fore.YELLOW + '[AUTO]\t' + colorama.Style.RESET_ALL + str(distanceForward))
+                if(distanceForward <= 0):
+                    car.slowBreak()
+                    time.sleep(0.5)
+                    car.setRight()
+                    car.fastStart(50)
+                    car.slowBreak()
+                    car.setForward()
+                elif(distanceForward < 50):
+                    car.changeSpeed(25)
+                elif(distanceForward < 100):
+                    car.changeSpeed(30)
+                else:
+                    car.changeSpeed(35)
 
-                # if(not isManual):
-                #     if(USReading > 50):
-                #         car.setForward()
-                #         if(flag):
-                #             car.slowStart(30)
-                #             flag = 0
-                #     else:
-                #         if(not flag): # First time 
-                #             car.slowBreak()
 
-
-    # except Exception as e:
-    #     print("Error. Stopping")
-    #     print(e)
-    #     command.close()
-    #     car.close()
-    except KeyboardInterrupt:
+    except BaseException as e:
+        print(colorama.Fore.RED + '[ERROR]\t' + colorama.Style.RESET_ALL + e.message)
+        print(colorama.Fore.RED + '[ERROR]\t' + colorama.Style.RESET_ALL + traceback.format_exc())
         command.close()
         car.close()
+        break
