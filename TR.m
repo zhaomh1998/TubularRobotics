@@ -22,7 +22,7 @@ function varargout = TR(varargin)
 
 % Edit the above text to modify the response to help TR
 
-% Last Modified by GUIDE v2.5 31-May-2018 14:47:04
+% Last Modified by GUIDE v2.5 03-Jun-2018 18:01:09
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -64,11 +64,13 @@ guidata(hObject, handles);
 global pi
 PI_IP = '172.24.1.1';
 % PI_IP = '127.0.0.1';
+% PI_IP = '192.168.137.106'
 pi = tcpclient(PI_IP, 3000);
 
-%% Initialize vard
+%% Initialize vars
 global pwm
 pwm = 0;
+
 
 % --- Outputs from this function are returned to the command line.
 function varargout = TR_OutputFcn(hObject, eventdata, handles) 
@@ -86,50 +88,55 @@ function PB_F_Callback(hObject, eventdata, handles)
 global pi pwm
 set(handles.Status1,'String','Sending command..')
 set(handles.Status2,'String','')
+set(handles.isAuto,'Value',0)
 pi.write(uint8(['F' int2str(pwm)]))
 pause(0.1)
-recv = char(pi.read());
-set(handles.Status2,'String',recv)
+% recv = char(pi.read());
+% set(handles.Status2,'String',recv)
 
 % --- Executes on button press in PB_R.
 function PB_R_Callback(hObject, eventdata, handles)
 global pi pwm
 set(handles.Status1,'String','Sending command..')
 set(handles.Status2,'String','')
+set(handles.isAuto,'Value',0)
 pi.write(uint8(['R' int2str(pwm)]))
 pause(0.1)
-recv = char(pi.read());
-set(handles.Status2,'String',recv)
+% recv = char(pi.read());
+% set(handles.Status2,'String',recv)
 
 % --- Executes on button press in PB_L.
 function PB_L_Callback(hObject, eventdata, handles)
 global pi pwm
 set(handles.Status1,'String','Sending command..')
 set(handles.Status2,'String','')
+set(handles.isAuto,'Value',0)
 pi.write(uint8(['L' int2str(pwm)]))
 pause(0.1)
-recv = char(pi.read());
-set(handles.Status2,'String',recv)
+% recv = char(pi.read());
+% set(handles.Status2,'String',recv)
 
 % --- Executes on button press in PB_B.
 function PB_B_Callback(hObject, eventdata, handles)
 global pi pwm
 set(handles.Status1,'String','Sending command..')
 set(handles.Status2,'String','')
+set(handles.isAuto,'Value',0)
 pi.write(uint8(['B' int2str(pwm)]))
 pause(0.1)
-recv = char(pi.read());
-set(handles.Status2,'String',recv)
+% recv = char(pi.read());
+% set(handles.Status2,'String',recv)
 
 % --- Executes on button press in PB_S.
 function PB_S_Callback(hObject, eventdata, handles)
 global pi
 set(handles.Status1,'String','Sending command..')
 set(handles.Status2,'String','')
+set(handles.isAuto,'Value',0)
 pi.write(uint8('S'))
 pause(0.1)
-recv = char(pi.read());
-set(handles.Status2,'String',recv)
+% recv = char(pi.read());
+% set(handles.Status2,'String',recv)
 
 
 % --- Executes on slider movement.
@@ -154,4 +161,68 @@ function Speed_Slider_CreateFcn(hObject, eventdata, handles)
 % Hint: slider controls usually have a light gray background.
 if isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor',[.9 .9 .9]);
+end
+
+
+% --- Executes on button press in isAuto.
+function isAuto_Callback(hObject, eventdata, handles)
+% hObject    handle to isAuto (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of isAuto
+global pi
+if(get(hObject,'Value'))
+    pi.write(uint8(['A' int2str(1)]))
+else
+    pi.write(uint8(['A' int2str(0)]))
+end
+
+
+% --- Executes on button press in PB_StartPlot.
+function PB_StartPlot_Callback(hObject, eventdata, handles)
+% hObject    handle to PB_StartPlot (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+global pi
+count = 1;
+u0t=[];u0=[];u1t=[];u1=[];u2t=[];u2=[];
+e0t=[];e0=[];e1t=[];e1=[];
+
+while(1)
+    data = char(pi.read());
+    if(~isempty(data))
+        a(count) = string(data);
+        if(data(1) == 'U')
+            dataStr = string(data);
+            dataStr = extractBetween(dataStr, "[", "]");
+            dataVal = dataStr(1);
+            dataVal = regexprep(dataVal,'[\n\r]+',' ');
+            dataVal = str2num(dataVal);
+            dataTime = dataStr(2);
+            dataTime = regexprep(dataTime,'[\n\r]+',' ');
+            dataTime = str2num(dataTime);
+%             dataEncoder = dataStr(3);
+%             dataEncoder = regexprep(dataEncoder,'[\n\r]+',' ');
+%             dataEncoder = str2num(dataEncoder);
+            % TODO: Mapping
+            if(data(2) == '0')
+                u0t = [u0t dataTime];
+                u0 = [u0 dataVal];
+                plot(handles.ax1,x,y)
+                ylim([0,500])
+                count = count + 1;
+            elseif(data(2) == '1')
+                u1t = [u1t dataTime];
+                u1 = [u1 dataVal];
+            elseif(data(2) == '2')
+                u2t = [u2t dataTime];
+                u2 = [u2 dataVal];
+            end
+%         elseif (data(1) == 'E') % TODO: Combine encoder data with ultrasonic and send them together
+%             continue
+        end
+    end
+    save data.mat u0 u1 u2 u0t u1t u2t e0 e1 e0t e1t
+    pause(0.1)
 end
