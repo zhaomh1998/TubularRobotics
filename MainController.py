@@ -11,6 +11,7 @@ isManual = True
 USReading = 50
 currentSpeed = 0.0
 isGoingForward = True
+startUp = False
 while(True):
     try:
         received = command.read()
@@ -24,8 +25,8 @@ while(True):
                     car.slowBreak()
                     car.setForward()
                     currentSpeed = int(data[1:])
-                    # car.slowStart(currentSpeed)
-                    car.fastStart(currentSpeed)
+                    car.slowStart(currentSpeed)
+                    # car.fastStart(currentSpeed)
                 elif(data[0] == 'B'):
                     isManual = True
                     car.slowBreak()
@@ -50,6 +51,7 @@ while(True):
                 elif(data[0] == 'A'):
                     if(int(data[1:]) == 1):
                         isManual = False
+                        car.setForward()
                     else:
                         isManual = True
                 elif(data[0] == 'U'):
@@ -67,16 +69,29 @@ while(True):
                 if(distanceForward <= 0):
                     car.slowBreak()
                     time.sleep(0.5)
+                    if(startUp):
+                        print(colorama.Fore.GREEN + '[CONTROL]\t' + colorama.Style.RESET_ALL + 'Going backward')
+                        car.setBackward()
+                        car.fastStart(0)
+                        time.sleep(1)
+                        car.setForward()
+                        startUp = False
+                    print(colorama.Fore.GREEN + '[CONTROL]\t' + colorama.Style.RESET_ALL + 'Start turning')
                     car.setRight()
-                    car.fastStart(50)
+                    # car.fastStart(50)
+                    car.slowStart(55)
                     car.slowBreak()
+                    print(colorama.Fore.GREEN + '[CONTROL]\t' + colorama.Style.RESET_ALL + 'Turning Finished')
                     car.setForward()
                 elif(distanceForward < 50):
+                    startUp = True
                     car.changeSpeed(25)
                 elif(distanceForward < 100):
-                    car.changeSpeed(30)
+                    startUp = True
+                    car.changeSpeed(28)
                 else:
-                    car.changeSpeed(35)
+                    startUp = True
+                    car.changeSpeed(30)
 
 
     except BaseException as e:

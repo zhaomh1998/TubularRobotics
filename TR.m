@@ -185,45 +185,64 @@ function PB_StartPlot_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 global pi
-count = 1;
+count = 1; u0count = 1;
 u0t=[];u0=[];u1t=[];u1=[];u2t=[];u2=[];
-e0t=[];e0=[];e1t=[];e1=[];
-pi.read() % Flush buffer
+e0t=[];e0=[];e1t=[];e1=[];posx=zeros(500);posy=zeros(500);locx=zeros(500);locy=zeros(500);
+lastEncoder1=0;lastEncoder2=0;
+pi.read(); % Flush buffer
 while(1)
     data = char(pi.read());
     if(~isempty(data))
         a(count) = string(data);
         if(data(1) == 'U')
             dataStr = string(data);
+            ultrasonicIndexLocationsInPacket = strfind(dataStr,'U') + 1;
             dataStr = extractBetween(dataStr, "[", "]");
-            dataVal = dataStr(1);
+            for packetIndex = 1:(length(dataStr)/4) % Handles multiple packets
+            dataVal = dataStr(1+(packetIndex - 1)*4);
             dataVal = regexprep(dataVal,'[\n\r]+',' ');
-            dataVal = str2num(dataVal);
-            dataTime = dataStr(2);
+            dataVal = str2num(char(dataVal));
+            dataTime = dataStr(2+(packetIndex - 1)*4);
             dataTime = regexprep(dataTime,'[\n\r]+',' ');
-            dataTime = str2num(dataTime);
-            dataEncoder1 = dataStr(3);
-            dataEncoder1 = regexprep(dataEncoder1,'[\n\r]+',' ');
-            dataEncoder1 = str2num(dataEncoder1);
-            dataEncoder2 = dataStr(3);
-            dataEncoder2 = regexprep(dataEncoder2,'[\n\r]+',' ');
-            dataEncoder2 = str2num(dataEncoder2);
-            % TODO: Mapping
-            if(data(2) == '0')
+            dataTime = str2num(char(dataTime));
+            
+            if(data(ultrasonicIndexLocationsInPacket(packetIndex)) == '0')
                 u0t = [u0t dataTime];
                 u0 = [u0 dataVal];
-                plot(handles.ax1,dataTime,dataVal)
-                ylim([0,500])
-            elseif(data(2) == '1')
+                        %% Parsing Encoder Data
+                        dataEncoder1 = dataStr(3+(packetIndex - 1)*4);
+                        dataEncoder1 = regexprep(dataEncoder1,'[\n\r]+',' ');
+                        dataEncoder1 = str2num(char(dataEncoder1));
+                        dataEncoder2 = dataStr(4+(packetIndex - 1)*4);
+                        dataEncoder2 = regexprep(dataEncoder2,'[\n\r]+',' ');
+                        dataEncoder2 = str2num(char(dataEncoder2));
+                        %% Calculate Encoder difference (s1,s2)
+                        diffDataEncoder1 = [(dataEncoder1(1) - lastEncoder1) diff(dataEncoder1)];
+                        diffDataEncoder2 = [(dataEncoder2(1) - lastEncoder2) diff(dataEncoder2)];
+                        lastEncoder1 = dataEncoder1(end);
+                        lastEncoder2 = dataEncoder2(end);
+                        %% Calculate Position
+                        for i = 1:10
+                            ii = (u0count-1)*10 + i;
+                            [posx(ii), posy(ii)] = MappingCalc(diffDataEncoder1(i),diffDataEncoder2(i),24);
+                            locx(ii) = locx(max(1,ii-1)) + posx(ii);
+                            locy(ii) = locy(max(1,ii-1)) + posy(ii);
+                            fprintf('#%d\t%.2f\t%.2f\t\t%.2f\t%.2f\n',ii,posx(ii),posy(ii),locx(ii),locy(ii))
+                        end
+
+                        plot(handles.ax1,locx,locy,'.')
+                        save data.mat a u0 u1 u2 u0t u1t u2t e0 e1 e0t e1t posx posy locx locy dataEncoder1 dataEncoder2
+                u0count = u0count + 1;
+            elseif(data(ultrasonicIndexLocationsInPacket(packetIndex)) == '1')
                 u1t = [u1t dataTime];
                 u1 = [u1 dataVal];
-            elseif(data(2) == '2')
+            elseif(data(ultrasonicIndexLocationsInPacket(packetIndex)) == '2')
                 u2t = [u2t dataTime];
                 u2 = [u2 dataVal];
             end
+            count = count + 1;
+            end
         end
-        count = count + 1;
-        save data.mat a u0 u1 u2 u0t u1t u2t e0 e1 e0t e1t
-    end
+        end
     pause(0.1)
 end
