@@ -2,10 +2,10 @@ from RPi import GPIO
 import time, WirelessTool, traceback, colorama
 colorama.init()
 
-R_clk = 10
-R_dt = 9
-L_clk = 25
-L_dt = 8
+L_clk = 10
+L_dt = 9
+R_clk = 25
+R_dt = 8
 
 ECServer = WirelessTool.TCPEchoServer(3002,2,'127.0.0.1')
 while(not ECServer.connect(5)):

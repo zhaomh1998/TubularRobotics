@@ -185,16 +185,21 @@ function PB_StartPlot_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 global pi
-count = 1; u0count = 1;
+count = 1; u0count = 1; u1count = 1; u2count = 1;
 u0t=[];u0=[];u1t=[];u1=[];u2t=[];u2=[];
-e0t=[];e0=[];e1t=[];e1=[];posx=zeros(500);posy=zeros(500);locx=zeros(500);locy=zeros(500);
-lastEncoder1=0;lastEncoder2=0;
+u0locx=zeros(1,2);u0locy=zeros(1,2);
+u1locx=zeros(1,2);u1locy=zeros(1,2);
+u2locx=zeros(1,2);u2locy=zeros(1,2);
+u0LastEncoder1=0;u0LastEncoder2=0;u0Angle=0;
+u1LastEncoder1=0;u1LastEncoder2=0;u1Angle=0;
+u2LastEncoder1=0;u2LastEncoder2=0;u2Angle=0;
 pi.read(); % Flush buffer
 while(1)
     data = char(pi.read());
     if(~isempty(data))
         a(count) = string(data);
         if(data(1) == 'U')
+            %% Parse Incoming String
             dataStr = string(data);
             ultrasonicIndexLocationsInPacket = strfind(dataStr,'U') + 1;
             dataStr = extractBetween(dataStr, "[", "]");
@@ -205,42 +210,106 @@ while(1)
             dataTime = dataStr(2+(packetIndex - 1)*4);
             dataTime = regexprep(dataTime,'[\n\r]+',' ');
             dataTime = str2num(char(dataTime));
-            
+            set(handles.Status2,'String',dataTime(end))
             if(data(ultrasonicIndexLocationsInPacket(packetIndex)) == '0')
                 u0t = [u0t dataTime];
                 u0 = [u0 dataVal];
-                        %% Parsing Encoder Data
-                        dataEncoder1 = dataStr(3+(packetIndex - 1)*4);
-                        dataEncoder1 = regexprep(dataEncoder1,'[\n\r]+',' ');
-                        dataEncoder1 = str2num(char(dataEncoder1));
-                        dataEncoder2 = dataStr(4+(packetIndex - 1)*4);
-                        dataEncoder2 = regexprep(dataEncoder2,'[\n\r]+',' ');
-                        dataEncoder2 = str2num(char(dataEncoder2));
+                        %% Parse Encoder Data
+                        u0DataEncoder1 = dataStr(3+(packetIndex - 1)*4);
+                        u0DataEncoder1 = regexprep(u0DataEncoder1,'[\n\r]+',' ');
+                        u0DataEncoder1 = str2num(char(u0DataEncoder1));
+                        u0DataEncoder2 = dataStr(4+(packetIndex - 1)*4);
+                        u0DataEncoder2 = regexprep(u0DataEncoder2,'[\n\r]+',' ');
+                        u0DataEncoder2 = str2num(char(u0DataEncoder2));
                         %% Calculate Encoder difference (s1,s2)
-                        diffDataEncoder1 = [(dataEncoder1(1) - lastEncoder1) diff(dataEncoder1)];
-                        diffDataEncoder2 = [(dataEncoder2(1) - lastEncoder2) diff(dataEncoder2)];
-                        lastEncoder1 = dataEncoder1(end);
-                        lastEncoder2 = dataEncoder2(end);
-                        %% Calculate Position
+                        u0DiffDataEncoder1 = [(u0DataEncoder1(1) - u0LastEncoder1) diff(u0DataEncoder1)];
+                        u0DiffDataEncoder2 = [(u0DataEncoder2(1) - u0LastEncoder2) diff(u0DataEncoder2)];
+                        u0LastEncoder1 = u0DataEncoder1(end);
+                        u0LastEncoder2 = u0DataEncoder2(end);
+                        %% Calculate Positions
                         for i = 1:10
                             ii = (u0count-1)*10 + i;
-                            [posx(ii), posy(ii)] = MappingCalc(diffDataEncoder1(i),diffDataEncoder2(i),24);
-                            locx(ii) = locx(max(1,ii-1)) + posx(ii);
-                            locy(ii) = locy(max(1,ii-1)) + posy(ii);
-                            fprintf('#%d\t%.2f\t%.2f\t\t%.2f\t%.2f\n',ii,posx(ii),posy(ii),locx(ii),locy(ii))
-                        end
-
-                        plot(handles.ax1,locx,locy,'.')
-                        save data.mat a u0 u1 u2 u0t u1t u2t e0 e1 e0t e1t posx posy locx locy dataEncoder1 dataEncoder2
+                            [posx, posy, u0Angle] = MappingCalc(u0DiffDataEncoder1(i),u0DiffDataEncoder2(i),24,u0Angle);
+                            u0locx(ii) = u0locx(max(1,ii-1)) + posx;
+                            u0locy(ii) = u0locy(max(1,ii-1)) + posy;
+                            sinAlpha = sin(u0Angle); cosAlpha = cos(u0Angle);
+                            u0xfdata(ii) = u0locx(ii) + u0(ii)*sinAlpha;
+                            u0yfdata(ii) = u0locy(ii) + u0(ii)*cosAlpha;
+%                             fprintf('#%d\t%.2f\t%.2f\t\t%.2f\t%.2f\n',ii,u0locx(ii),u0locy(ii),u0xfdata(ii),u0yfdata(ii))
+                        end 
+                        hold on
+                        plot(handles.ax1,u0locx,u0locy,'k.')
+                        plot(handles.ax1,u0xfdata,u0yfdata,'r.') % Data received by front ultrasonic
+                        xlim([-500 500])
+                        ylim([-500 500])
                 u0count = u0count + 1;
             elseif(data(ultrasonicIndexLocationsInPacket(packetIndex)) == '1')
                 u1t = [u1t dataTime];
                 u1 = [u1 dataVal];
+                        %% Parse Encoder Data
+                        u1DataEncoder1 = dataStr(3+(packetIndex - 1)*4);
+                        u1DataEncoder1 = regexprep(u1DataEncoder1,'[\n\r]+',' ');
+                        u1DataEncoder1 = str2num(char(u1DataEncoder1));
+                        u1DataEncoder2 = dataStr(4+(packetIndex - 1)*4);
+                        u1DataEncoder2 = regexprep(u1DataEncoder2,'[\n\r]+',' ');
+                        u1DataEncoder2 = str2num(char(u1DataEncoder2));
+                        %% Calculate Encoder difference (s1,s2)
+                        u1DiffDataEncoder1 = [(u1DataEncoder1(1) - u1LastEncoder1) diff(u1DataEncoder1)];
+                        u1DiffDataEncoder2 = [(u1DataEncoder2(1) - u1LastEncoder2) diff(u1DataEncoder2)];
+                        u1LastEncoder1 = u1DataEncoder1(end);
+                        u1LastEncoder2 = u1DataEncoder2(end);
+                        %% Calculate Positions
+                        for i = 1:10
+                            ii = (u1count-1)*10 + i;
+                            [posx, posy, u1Angle] = MappingCalc(u1DiffDataEncoder1(i),u1DiffDataEncoder2(i),24,u1Angle);
+                            u1locx(ii) = u1locx(max(1,ii-1)) + posx;
+                            u1locy(ii) = u1locy(max(1,ii-1)) + posy;
+                            sinAlpha = sin(u1Angle); cosAlpha = cos(u1Angle);
+                            u1xrdata(ii) = u1locx(ii) + (u1(ii) + 0.5*24)*cosAlpha;
+                            u1yrdata(ii) = u1locy(ii) - (u1(ii) + 0.5*24)*sinAlpha;
+%                             fprintf('#%d\t%.2f\t%.2f\t\t%.2f\t%.2f\n',ii,u1locx(ii),u1locy(ii),u1xrdata(ii),u1yrdata(ii))
+                        end 
+                        hold on
+                        plot(handles.ax1,u1locx,u1locy,'k.')
+                        plot(handles.ax1,u1xrdata,u1yrdata,'g.') % Data received by right ultrasonic
+                        xlim([-500 500])
+                        ylim([-500 500])
+                u1count = u1count + 1;
             elseif(data(ultrasonicIndexLocationsInPacket(packetIndex)) == '2')
                 u2t = [u2t dataTime];
                 u2 = [u2 dataVal];
+                        %% Parse Encoder Data
+                        u2DataEncoder1 = dataStr(3+(packetIndex - 1)*4);
+                        u2DataEncoder1 = regexprep(u2DataEncoder1,'[\n\r]+',' ');
+                        u2DataEncoder1 = str2num(char(u2DataEncoder1));
+                        u2DataEncoder2 = dataStr(4+(packetIndex - 1)*4);
+                        u2DataEncoder2 = regexprep(u2DataEncoder2,'[\n\r]+',' ');
+                        u2DataEncoder2 = str2num(char(u2DataEncoder2));
+                        %% Calculate Encoder difference (s1,s2)
+                        u2DiffDataEncoder1 = [(u2DataEncoder1(1) - u2LastEncoder1) diff(u2DataEncoder1)];
+                        u2DiffDataEncoder2 = [(u2DataEncoder2(1) - u2LastEncoder2) diff(u2DataEncoder2)];
+                        u2LastEncoder1 = u2DataEncoder1(end);
+                        u2LastEncoder2 = u2DataEncoder2(end);
+                        %% Calculate Positions
+                        for i = 1:10
+                            ii = (u2count-1)*10 + i;
+                            [posx, posy, u2Angle] = MappingCalc(u2DiffDataEncoder1(i),u2DiffDataEncoder2(i),24,u2Angle);
+                            u2locx(ii) = u2locx(max(1,ii-1)) + posx;
+                            u2locy(ii) = u2locy(max(1,ii-1)) + posy;
+                            sinAlpha = sin(u2Angle); cosAlpha = cos(u2Angle);
+                            u2xldata(ii) = u2locx(ii) - (u2(ii) + 0.5*24)*cosAlpha;
+                            u2yldata(ii) = u2locy(ii) + (u2(ii) + 0.5*24)*sinAlpha;
+%                             fprintf('#%d\t%.2f\t%.2f\t\t%.2f\t%.2f\n',ii,u2locx(ii),u2locy(ii),u2xldata(ii),u2yldata(ii))
+                        end 
+                        hold on
+                        plot(handles.ax1,u2locx,u2locy,'k.')
+                        plot(handles.ax1,u2xldata,u2yldata,'b.') % Data received by left ultrasonic
+                        xlim([-500 500])
+                        ylim([-500 500])
+                u2count = u2count + 1;
             end
             count = count + 1;
+            % TODO: Automatically saves data each loop
             end
         end
         end
